@@ -1,0 +1,618 @@
+---
+title: "NYPD Shooting Incident Data"
+date: "2022-11-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Defining and importing in NYPD shooting incident dataset from online source
+```{r defineNYPDData}
+url_in <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+```
+
+```{r importNYPDData}
+library(tidyverse)
+nypdIn <- read_csv(url_in)
+```
+
+## Tidy the Data - selecting specific columns, renaming them, and converting date/time formats.
+
+```{r tidyNYPDData, echo=TRUE}
+library(lubridate)
+nypdIn <- nypdIn %>% 
+  select(-c(INCIDENT_KEY, PRECINCT, JURISDICTION_CODE,  
+            X_COORD_CD, Y_COORD_CD))
+nypdII <- nypdIn %>% 
+  rename(date = 'OCCUR_DATE', time = 'OCCUR_TIME', borough = 'BORO',
+         #locationDesc = 'LOCATION_DESC', murder = 'STATISTICAL_MURDER_FLAG', 
+         #perpAge = 'PERP_AGE_GROUP', perpSex = 'PERP_SEX', perpRace = 'PERP_RACE', 
+         victimAge = 'VIC_AGE_GROUP', victimSex = 'VIC_SEX', victimRace = 'VIC_RACE',
+         latitude = "Latitude", longitude = "Longitude", Lon_Lat = "Lon_Lat") %>% 
+  mutate(date = mdy(date), time = hms(time), hh = hour(time), yy = year(date))
+```
+
+## Summarizing the data
+```{r summaryNYPDData}
+summary(nypdII)
+```
+
+## Displaying a few lines from the data
+```{r sampleNYPDData}
+head(nypdII)
+```
+
+## Analyzing the "Completeness" of the data
+
+###The summary shows that there are numerous attributes with missing data. Calculating the percentage of ###missing data in several different columns.
+
+```{r transformNYPD, echo=TRUE}
+mean(is.na(nypdII$borough))
+
+mean(is.na(nypdII$locationDesc))
+
+mean(is.na(nypdII$perpAge))
+
+mean(is.na(nypdII$perpSex))
+
+mean(is.na(nypdII$perpRace))
+
+mean(is.na(nypdII$victimAge))
+
+mean(is.na(nypdII$victimSex))
+
+mean(is.na(nypdII$victimRace))
+```
+
+### Evaluating the total amount of data missing. 
+
+```{r totalMissingValues, echo=TRUE} 
+sum(is.na(nypdII)) 
+```
+### Isolating each borough and from the years 2017 - 2021
+```{r boro, echo=FALSE}
+queens17_21 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy > 2016, ]
+bronx17_21 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy > 2016, ]
+manhattan17_21 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy > 2016, ]
+brooklyn17_21 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy > 2016, ]
+statenIsland17_21 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy > 2016, ]
+
+allBoroughs17_21 <- nypdII[nypdII$yy > 2016, ]
+
+allBoroughs21 <- nypdII[nypdII$yy == 2021, ]
+
+queens21 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy == 2021, ]
+bronx21 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy == 2021, ]
+manhattan21 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy == 2021, ]
+brooklyn21 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy == 2021, ]
+statenIsland21 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy == 2021, ]
+
+queens20 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy == 2020, ]
+bronx20 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy == 2020, ]
+manhattan20 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy == 2020, ]
+brooklyn20 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy == 2020, ]
+statenIsland20 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy == 2020, ]
+
+queens19 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy == 2019, ]
+bronx19 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy == 2019, ]
+manhattan19 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy == 2019, ]
+brooklyn19 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy == 2019, ]
+statenIsland19 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy == 2019, ]
+
+queens18 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy == 2018, ]
+bronx18 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy == 2018, ]
+manhattan18 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy == 2018, ]
+brooklyn18 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy == 2018, ]
+statenIsland18 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy == 2018, ]
+
+queens17 <- nypdII[nypdII$borough == 'QUEENS' & nypdII$yy == 2017, ]
+bronx17 <- nypdII[nypdII$borough == 'BRONX' & nypdII$yy == 2017, ]
+manhattan17 <- nypdII[nypdII$borough == 'MANHATTAN' & nypdII$yy == 2017, ]
+brooklyn17 <- nypdII[nypdII$borough == 'BROOKLYN' & nypdII$yy == 2017, ]
+statenIsland17 <- nypdII[nypdII$borough == 'STATEN ISLAND' & nypdII$yy == 2017, ]
+```
+
+## Visualizing Data
+
+### Creating maps of each borough in each year, with all their shooting incidents  
+```{r viz1}
+library(ggplot2)
+library(ggmap)
+
+register_google(key="AIzaSyDdkTyQFtvUI28ei5HYRjnHKzLG4aPGe2o")
+
+lonSI <- c(manhattan17$longitude)
+latSI <- c(manhattan17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapManhattan17 <- get_map(location = c(lon = -73.966163, lat = 40.784869), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapManhattan17) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "MANHATTAN - 2017", y = "latitude", x = "longitude")
+
+
+lonSI <- c(manhattan18$longitude)
+latSI <- c(manhattan18$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapmanhattan18 <- get_map(location = c(lon = -73.966163, lat = 40.784869), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapmanhattan18) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "MANHATTAN - 2018", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(manhattan19$longitude)
+latSI <- c(manhattan19$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapmanhattan19 <- get_map(location = c(lon = -73.966163, lat = 40.784869), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapmanhattan19) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "MANHATTAN - 2019", y = "latitude", x = "longitude")
+
+
+lonSI <- c(manhattan20$longitude)
+latSI <- c(manhattan20$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapmanhattan20 <- get_map(location = c(lon = -73.966163, lat = 40.784869), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapmanhattan20) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "MANHATTAN - 2020", y = "latitude", x = "longitude")
+
+
+lonSI <- c(manhattan21$longitude)
+latSI <- c(manhattan21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapmanhattan21 <- get_map(location = c(lon = -73.966163, lat = 40.784869), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapmanhattan21) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "MANHATTAN - 2021", y = "latitude", x = "longitude")
+
+
+lonSI <- c(bronx17$longitude)
+latSI <- c(bronx17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+
+#-----------------------------------------------------------------
+lonSI <- c(bronx17$longitude)
+latSI <- c(bronx17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapbronx17 <- get_map(location = c(lon = -73.868058, lat = 40.855015), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbronx17) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BRONX - 2017", y = "latitude", x = "longitude")
+
+
+lonSI <- c(bronx18$longitude)
+latSI <- c(bronx18$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapbronx18 <- get_map(location = c(lon = -73.868058, lat = 40.855015), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbronx18) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BRONX - 2018", y = "latitude", x = "longitude")
+
+
+lonSI <- c(bronx19$longitude)
+latSI <- c(bronx19$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbronx19 <- get_map(location = c(lon = -73.868058, lat = 40.855015), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbronx19) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BRONX - 2019", y = "latitude", x = "longitude")
+
+
+lonSI <- c(bronx20$longitude)
+latSI <- c(bronx20$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbronx20 <- get_map(location = c(lon = -73.868058, lat = 40.855015), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbronx20) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BRONX - 2020", y = "latitude", x = "longitude")
+
+lonSI <- c(bronx21$longitude)
+latSI <- c(bronx21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbronx21 <- get_map(location = c(lon = -73.868058, lat = 40.855015), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbronx21) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BRONX - 2021", y = "latitude", x = "longitude")
+
+
+
+
+lonSI <- c(brooklyn17$longitude)
+latSI <- c(brooklyn17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbrooklyn17 <- get_map(location = c(lon = -73.950848, lat = 40.651928), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbrooklyn17) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BROOKLYN - 2017", y = "latitude", x = "longitude")
+
+lonSI <- c(brooklyn18$longitude)
+latSI <- c(brooklyn18$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapbrooklyn18 <- get_map(location = c(lon = -73.950848, lat = 40.651928), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbrooklyn18) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BROOKLYN - 2018", y = "latitude", x = "longitude")
+
+lonSI <- c(brooklyn19$longitude)
+latSI <- c(brooklyn19$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbrooklyn19 <- get_map(location = c(lon = -73.950848, lat = 40.651928), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbrooklyn19) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BROOKLYN - 2019", y = "latitude", x = "longitude")
+
+
+lonSI <- c(brooklyn20$longitude)
+latSI <- c(brooklyn20$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapbrooklyn20 <- get_map(location = c(lon = -73.950848, lat = 40.651928), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbrooklyn20) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BROOKLYN - 2020", y = "latitude", x = "longitude")
+
+
+lonSI <- c(brooklyn21$longitude)
+latSI <- c(brooklyn21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapbrooklyn21 <- get_map(location = c(lon = -73.950848, lat = 40.651928), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapbrooklyn21) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "BROOKLYN - 2021", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(queens17$longitude)
+latSI <- c(queens17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapqueens17 <- get_map(location = c(lon = -73.833433, lat = 40.694158), zoom = 11,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapqueens17) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "QUEENS - 2017", y = "latitude", x = "longitude")
+
+
+lonSI <- c(queens18$longitude)
+latSI <- c(queens18$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapqueens18 <- get_map(location = c(lon = -73.833433, lat = 40.694158), zoom = 11,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapqueens18) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "QUEENS - 2018", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(queens19$longitude)
+latSI <- c(queens19$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapqueens19 <- get_map(location = c(lon = -73.833433, lat = 40.694158), zoom = 11,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapqueens19) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "QUEENS - 2019", y = "latitude", x = "longitude")
+#----------------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------
+lonSI <- c(queens20$longitude)
+latSI <- c(queens20$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapqueens20 <- get_map(location = c(lon = -73.833433, lat = 40.694158), zoom = 11,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapqueens20) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "QUEENS - 2020", y = "latitude", x = "longitude")
+#----------------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------
+lonSI <- c(queens21$longitude)
+latSI <- c(queens21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map c(lon = mean(df$lonSI), lat = mean(df$latSI))
+mapqueens21 <- get_map(location = c(lon = -73.833433, lat = 40.694158), zoom = 11,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapqueens21) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "QUEENS - 2021", y = "latitude", x = "longitude")
+
+
+lonSI <- c(statenIsland17$longitude)
+latSI <- c(statenIsland17$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapstatenIsland17 <- get_map(location = c(lon = -74.162785, lat = 40.577754), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapstatenIsland17) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "STATEN ISLAND - 2017", y = "latitude", x = "longitude")
+
+lonSI <- c(statenIsland18$longitude)
+latSI <- c(statenIsland18$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapstatenIsland18 <- get_map(location = c(lon = -74.162785, lat = 40.577754), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapstatenIsland18) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "STATEN ISLAND - 2018", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(statenIsland19$longitude)
+latSI <- c(statenIsland19$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapstatenIsland19 <- get_map(location = c(lon = -74.162785, lat = 40.577754), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapstatenIsland19) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "STATEN ISLAND - 2019", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(statenIsland20$longitude)
+latSI <- c(statenIsland20$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapstatenIsland20 <- get_map(location = c(lon = -74.162785, lat = 40.577754), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapstatenIsland20) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "STATEN ISLAND - 2020", y = "latitude", x = "longitude")
+
+
+
+lonSI <- c(statenIsland21$longitude)
+latSI <- c(statenIsland21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapstatenIsland21 <- get_map(location = c(lon = -74.162785, lat = 40.577754), zoom = 12,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapstatenIsland21) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "STATEN ISLAND - 2021", y = "latitude", x = "longitude")
+
+
+lonSI <- c(allBoroughs21$longitude)
+latSI <- c(allBoroughs21$latitude)
+
+df <- as.data.frame(cbind(lonSI,latSI))
+
+# getting the map 
+mapAll <- get_map(location = c(lon = mean(df$lonSI), lat = mean(df$latSI)), zoom = 10,
+                      maptype = "roadmap", scale = 1)
+
+# plotting the map with some points on it
+ggmap(mapAll) +
+  geom_point(data = df, aes(x = lonSI, y = latSI, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE) + 
+  labs(title = "NYC", y = "latitude", x = "longitude")
+ 
+
+```
+
+### Now we look at shooting victims by age in each borough.  
+
+```{r dataViz2, echo=TRUE}
+
+
+ggplot(nypdII) + geom_bar(aes(x = borough, fill = borough)) + 
+  facet_wrap(~victimAge) + theme(legend.position = "top", axis.text.x = element_text(angle = 90)) +
+  labs(title = "Shooting Victims by Age and Borough", y = "Nbr of Shooting Incidents", x = "Borough")
+
+```
+
+### We can also look at shooting victims by race in each Borough.  
+
+```{r dataViz3, echo=TRUE}
+
+ggplot(nypdII) + 
+  geom_bar(aes(x = borough, fill = borough)) + 
+  facet_wrap(~victimRace) + theme(legend.position = "top", 
+        axis.text.x = element_text(angle = 90)) + 
+  labs(title = "Shooting Victims by Race and borough", y = "Nbr of Shooting Incidents")
+
+```
+
+### Now looking at shooting victims by HOUR OF THE DAY each incident occurred in each Borough.
+```{r dataViz4, echo=TRUE}
+
+ggplot(allBoroughs17_21) + 
+  geom_bar(aes(x = borough, fill = borough)) + 
+  facet_wrap(~hh) + theme(legend.position = "top", 
+        axis.text.x = element_text(angle = 90)) + 
+  labs(title = "Shooting Victims by Hour of the Day and Borough", y = "Nbr of Shooting Incidents")
+
+```
+
+### Finally looking at a simple line chart that shows the yearly number of shooting incidents in each 
+### borough over a five year period.
+```{r dataViz5, echo=TRUE}
+yearForLine = c(2017, 2018, 2019, 2020, 2021)
+manCnt = c(117, 105, 146, 272, 343)
+brkCnt = c(357, 365, 372, 819, 631)
+brxCnt = c(306, 313, 267, 504, 701)
+qenCnt = c(144, 150, 156, 303, 296)
+sIsCnt = c(46, 25, 26, 50, 40)
+
+
+df <- as.data.frame(cbind(yearForLine, manCnt, brkCnt, brxCnt, qenCnt, sIsCnt))
+ggplot(df, aes(yearForLine)) +
+geom_line(aes(y = manCnt),col ="red") +
+geom_line(aes(y = brkCnt),col ="blue")+
+geom_line(aes(y = brxCnt),col ="green") +
+geom_line(aes(y = qenCnt),col ="black")+
+geom_line(aes(y = sIsCnt),col ="purple") +
+scale_color_manual(name = "Boroughs", values = c("Manhattan" = "red", "Brooklyn" = "blue", "Bronx" = "green", "Queens" = "black", "Staten Island" = "purple")) +
+labs(title = "Shooting Incidents by Bourough, 2017-2021", x = "YEAR", y = "Nbr of Shootings") 
+
+```
+## Final Thoughts
+From this analysis, we can deduce a number of things. 
+First, we can see that the Bronx is the borough in the most need of resources at this time.Its 'shooting incident/ 100k citizens' rate is twice as high as any other borough.  Inversely, Staten Island appears to be statistically the safest borough (and is the only one to have a NEGATIVE 5 year growth rate).  Manhattan, while not having the most shootings, has the highest 5 year growth rate (nearly 300%).  In regards to time of day, 6pm - 4am are the most dangerous, regardless of borough.  COVID-19 broke a relative plateau in shootings.  All boroughs nearly doubled from 2019 to 2020. While most boroughs came down the following year, Manhattan and Bronx continued their climb in 2021 nearly 40% more.
+
+It feels like there was an opportunity to extract a lot more meaningful information from this data, if only it were more complete. The dwelling and perp data were lacking. It could be potentially helpful to know the types of dwellings that attract shooting incidents.  Perp data, by its nature, could be a very controversial to use, and I understand if, in some cases, it may have been intentionally left out. You would, in essence, be profiling a subset of the community as more likely to commit a crime.
+
